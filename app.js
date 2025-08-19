@@ -1,21 +1,26 @@
-const express = require('express');
-const path = require('path');
-const indexRouter = require('./routes/index');
+import express from 'express';
+import fetch from 'node-fetch';
+import cors from 'cors';
 
 const app = express();
-const PORT = 3000;
+app.use(cors());
 
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
+const API_KEY = process.env.API_KEY;
 
-// Use the router for handling routes
-app.use('/', indexRouter);
+app.get('/yt-search', async (req, res) => {
+  const { q = '', maxResults = 10 } = req.query;
 
-// Catch-all route for handling 404 errors
-app.use((req, res, next) => {
-    res.status(404).sendFile(path.join(__dirname, 'views', '404.html'));
-  });
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=viewCount&maxResults=${maxResults}&key=${API_KEY}`;
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/`);
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch from YouTube API' });
+  }
 });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+
